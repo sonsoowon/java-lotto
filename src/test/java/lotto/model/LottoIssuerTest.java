@@ -1,5 +1,6 @@
 package lotto.model;
 
+import lotto.dto.LotteriesDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -7,7 +8,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigInteger;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -31,24 +31,32 @@ public class LottoIssuerTest {
         }
     }
 
-    @DisplayName("구매 금액만큼의 로또를 발행한다")
+    @DisplayName("로또를 발행할 때")
     @Nested
     class IssueTest {
         private final LottoNumbersGenerator lottoNumbersGenerator = new LottoRandomNumbersGenerator();
         private final LottoIssuer lottoIssuer = new LottoIssuer(lottoNumbersGenerator);
 
+        @DisplayName("유효한 구입 금액을 전달하면 로또 컬렉션 객체를 반환한다")
         @ParameterizedTest
         @CsvSource(
                 value = {"8000:8", "0:0"},
                 delimiter = ':'
         )
-        void issueLotteriesWithPurchaseAmount(int amount, int expected) {
+        void valid(int amount, int expected) {
             PurchaseAmount purchaseAmount = PurchaseAmount.valueOf(BigInteger.valueOf(amount));
 
-            List<Lotto> lotteries = lottoIssuer.issue(purchaseAmount);
-            int actual = lotteries.size();
+            LotteriesDto lotteriesDto = lottoIssuer.issue(purchaseAmount);
+            int actual = lotteriesDto.getLotteries().size();
 
             assertThat(actual).isEqualTo(expected);
+        }
+
+        @DisplayName("null을 전달하면 예외가 발생한다")
+        @Test
+        void invalid() {
+            assertThatNullPointerException()
+                    .isThrownBy(() -> lottoIssuer.issue(null));
         }
     }
 }

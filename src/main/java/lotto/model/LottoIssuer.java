@@ -1,7 +1,6 @@
 package lotto.model;
 
-import camp.nextstep.edu.missionutils.Randoms;
-import lotto.util.LottoConstUtil;
+import lotto.dto.LotteriesDto;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -9,21 +8,25 @@ import java.util.List;
 import java.util.Objects;
 
 public class LottoIssuer {
-
     private final LottoNumbersGenerator lottoNumbersGenerator;
 
     public LottoIssuer(LottoNumbersGenerator lottoNumbersGenerator) {
         this.lottoNumbersGenerator = Objects.requireNonNull(lottoNumbersGenerator);
     }
 
-    public List<Lotto> issue(PurchaseAmount purchaseAmount) {
-        List<Lotto> lotteries = new ArrayList<>();
+    public LotteriesDto issue(PurchaseAmount purchaseAmount) {
+        BigInteger count = Objects.requireNonNull(purchaseAmount).getLottoCounts();
+        List<Lotto> lotteries = issueLotteriesByCount(count);
 
-        BigInteger lottoCounts = purchaseAmount.getLottoCounts();
-        while(lottoCounts.compareTo(BigInteger.ZERO) > 0) {
+        return LotteriesDto.from(lotteries);
+    }
+
+    private List<Lotto> issueLotteriesByCount(BigInteger count) {
+        List<Lotto> lotteries = new ArrayList<>();
+        while (count.compareTo(BigInteger.ZERO) > 0) {
             Lotto lotto = new Lotto(lottoNumbersGenerator.generate());
             lotteries.add(lotto);
-            lottoCounts = lottoCounts.subtract(BigInteger.ONE);
+            count = count.subtract(BigInteger.ONE);
         }
 
         return lotteries;
