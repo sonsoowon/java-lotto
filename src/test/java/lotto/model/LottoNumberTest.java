@@ -53,4 +53,37 @@ public class LottoNumberTest {
 
         assertThat(actual).isEqualTo(expected);
     }
+
+    @DisplayName("두 객체 A, B를 비교할 때")
+    @Nested
+    class CompareTest {
+        LottoNumber a = LottoNumber.valueOf(5);
+
+        @DisplayName("A.number > B.number 이면 양수를 반환한다")
+        @Test
+        void aBiggerThanB() {
+            LottoNumber b = LottoNumber.valueOf(1);
+            int actual = a.compare(a, b);
+
+            assertThat(actual).isGreaterThan(0);
+        }
+
+        @DisplayName("A.number == B.number 이면 0을 반환한다")
+        @Test
+        void aEqualToB() {
+            LottoNumber b = LottoNumber.valueOf(5);
+            int actual = a.compare(a, b);
+
+            assertThat(actual).isEqualTo(0);
+        }
+
+        @DisplayName("A.number < B.number 이면 음수를 반환한다")
+        @Test
+        void aSmallerThanB() {
+            LottoNumber b = LottoNumber.valueOf(10);
+            int actual = a.compare(a, b);
+
+            assertThat(actual).isLessThan(0);
+        }
+    }
 }

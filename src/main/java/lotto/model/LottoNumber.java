@@ -3,9 +3,10 @@ package lotto.model;
 import lotto.util.ErrorMessageUtil;
 import lotto.util.LottoConstUtil;
 
+import java.util.Comparator;
 import java.util.stream.IntStream;
 
-public class LottoNumber {
+public class LottoNumber implements Comparator<LottoNumber> {
 
     private final int number;
 
@@ -41,5 +42,10 @@ public class LottoNumber {
     @Override
     public String toString() {
         return String.valueOf(number);
+    }
+
+    @Override
+    public int compare(LottoNumber a, LottoNumber b) {
+        return a.number - b.number;
     }
 }
