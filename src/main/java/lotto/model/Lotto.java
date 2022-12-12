@@ -1,56 +1,66 @@
 package lotto.model;
 
-import java.util.HashSet;
+import lotto.util.ErrorMessageUtil;
+import lotto.util.LottoConstUtil;
+
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Lotto {
-    public static final int NUMBER_SIZE = 6;
-    public static final int MIN_NUMBER = 1;
-    public static final int MAX_NUMBER = 45;
 
-    private static final String INVALID_LOTTO_ERROR_MESSAGE
-            = "[ERROR] 로또 번호는 1부터 45사이의 중복되지 않은 숫자 6개여야 합니다.";
-    private final List<Integer> numbers;
+    private final List<LottoNumber> lottoNumbers;
 
     public Lotto(List<Integer> numbers) {
         validate(numbers);
-        this.numbers = numbers;
+        this.lottoNumbers = numbers.stream()
+                .map(LottoNumber::valueOf)
+                .collect(Collectors.toUnmodifiableList());
     }
 
-    public static void validate(List<Integer> numbers) throws IllegalArgumentException {
-        if (!isInCorrectRange(numbers)
-                || !hasCorrectSize(numbers)
-                || !noDuplicate(numbers)) {
-            throw new IllegalArgumentException(INVALID_LOTTO_ERROR_MESSAGE);
+    private static void validate(List<Integer> numbers) {
+        validateSize(numbers);
+        validateDuplicate(numbers);
+    }
+
+    private static void validateSize(List<Integer> numbers) {
+        if (!correctSize(numbers)) {
+            throw new IllegalArgumentException(ErrorMessageUtil.INVALID_LOTTO_NUMBER_SIZE.fullMessage());
         }
     }
 
-    public List<Integer> getNumbers() {
-        return numbers;
+    private static boolean correctSize(List<Integer> numbers) {
+        return numbers.size() == LottoConstUtil.NUMBER_SIZE;
     }
 
-    @Override
-    public String toString() {
-        String lottoNumbers = numbers.stream()
-                .sorted()
-                .collect(Collectors.toList())
-                .toString();
-        return "로또" + lottoNumbers;
-    }
-
-    private static boolean isInCorrectRange(List<Integer> numbers) {
-        return numbers.stream()
-                .allMatch(number -> number >= MIN_NUMBER && number <= MAX_NUMBER);
-    }
-
-    private static boolean hasCorrectSize(List<Integer> numbers) {
-        return numbers.size() == NUMBER_SIZE;
+    private static void validateDuplicate(List<Integer> numbers) {
+        if (!noDuplicate(numbers)) {
+            throw new IllegalArgumentException(ErrorMessageUtil.DUPLICATE_LOTTO_NUMBER.fullMessage());
+        }
     }
 
     private static boolean noDuplicate(List<Integer> numbers) {
-        Set<Integer> distinctNumbers = new HashSet<>(numbers);
-        return distinctNumbers.size() == numbers.size();
+        int distinctSize = (int) numbers.stream()
+                .distinct()
+                .count();
+        return distinctSize == numbers.size();
     }
+
+    public String getNumbers() {
+        return lottoNumbers.stream()
+                .sorted()
+                .map(LottoNumber::toString)
+                .collect(Collectors.toUnmodifiableList())
+                .toString();
+    }
+
+    public int containCounts(Lotto other) {
+        return (int) this.lottoNumbers.stream()
+                .filter(other.lottoNumbers::contains)
+                .count();
+    }
+
+    public boolean contains(LottoNumber lottoNumber) {
+        return this.lottoNumbers.contains(lottoNumber);
+    }
+
 }
