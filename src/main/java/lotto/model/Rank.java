@@ -1,54 +1,87 @@
 package lotto.model;
 
-import java.util.EnumMap;
-import java.util.Map;
+import lotto.util.ErrorMessageUtil;
+import lotto.util.LottoConstUtil;
+
+import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Arrays;
+import java.util.function.Function;
 
 public enum Rank {
-    FIRST(1, 2_000_000_000),
-    SECOND(2, 30_000_000),
-    THIRD(3, 1_500_000),
-    FOURTH(4, 50_000),
-    FIFTH(5, 5000),
-    NO_LUCK(0, 0);
+    FIRST(BigInteger.valueOf(2_000_000_000), 6, bonus -> true),
+    SECOND(BigInteger.valueOf(30_000_000), 5, bonus -> bonus),
+    THIRD(BigInteger.valueOf(1_500_000), 5, bonus -> !bonus),
+    FOURTH(BigInteger.valueOf(50_000), 4, bonus -> true),
+    FIFTH(BigInteger.valueOf(5000), 3, bonus -> true),
+    NO_LUCK(BigInteger.ZERO, 0, bonus -> true);
 
-    private static final Map<Rank, Integer> jackpotCriteria = new EnumMap<>(Map.of(
-            FIRST, Lotto.NUMBER_SIZE,
-            SECOND, Lotto.NUMBER_SIZE - 1,
-            THIRD, Lotto.NUMBER_SIZE - 1,
-            FOURTH, Lotto.NUMBER_SIZE - 2,
-            FIFTH, Lotto.NUMBER_SIZE - 3,
-            NO_LUCK, 0
-    ));
-    private final int rankNumber;
-    private final int reward;
+    private final BigInteger reward;
+    private final int hitCount;
+    private final Function<Boolean, Boolean> hasBonus;
 
-    Rank(int rankNumber, int reward) {
-        this.rankNumber = rankNumber;
+    Rank(BigInteger reward, int hitCount, Function<Boolean, Boolean> hasBonus) {
         this.reward = reward;
+        this.hitCount = hitCount;
+        this.hasBonus = hasBonus;
     }
 
-    public static Rank getInstanceOf(int jackpotHitCnt, boolean hitBonus) {
-        if (jackpotCriteria.get(THIRD) == jackpotHitCnt && !hitBonus) {
-            return THIRD;
+    public static Rank getInstanceOf(int lottoHitCount, boolean lottoHasBonus) {
+        validateHitCount(lottoHitCount);
+        return Arrays.stream(Rank.values())
+                .filter(rank -> rank.hitCount == lottoHitCount)
+                .filter(rank -> rank.hasBonus.apply(lottoHasBonus))
+                .findFirst()
+                .orElse(Rank.NO_LUCK);
+    }
+
+    private static void validateHitCount(int hitCount) {
+        if(!correctRange(hitCount)) {
+            throw new IllegalArgumentException(ErrorMessageUtil.INVALID_HIT_COUNT.fullMessage());
+        }
+    }
+
+    private static boolean correctRange(int hitCount) {
+        return 0 <= hitCount && hitCount <= LottoConstUtil.NUMBER_SIZE;
+    }
+
+    public BigInteger totalReward(BigInteger count) {
+        validateCount(count);
+        return reward.multiply(count);
+    }
+
+    public String fullMessage(BigInteger count) {
+        validateCount(count);
+        if(this == Rank.NO_LUCK) {
+            throw new IllegalStateException(ErrorMessageUtil.INVALID_RANK_MESSAGE.fullMessage());
         }
 
-        for (Rank rank : Rank.values()) {
-            if (jackpotCriteria.get(rank) == jackpotHitCnt) {
-                return rank;
+        String baseMessage = Message.baseMessage(this);
+        return String.format(baseMessage, count);
+    }
+
+    private static void validateCount(BigInteger count) {
+        if(count.compareTo(BigInteger.ZERO) >= 0) {
+            throw new IllegalArgumentException(ErrorMessageUtil.INVALID_COUNT.fullMessage());
+        }
+    }
+
+    private static class Message {
+
+        private static final String NORMAL_FORMAT = "%d개 일치 (%s원) - %s개";
+        private static final String BONUS_FORMAT = "%d개 일치, 보너스 볼 일치 (%s원) - %s개";
+        private static final NumberFormat REWARD_FORMATTER = new DecimalFormat("###,###");
+
+        static String baseMessage(Rank rank) {
+            String reward = REWARD_FORMATTER.format(rank.reward);
+
+            String message = NORMAL_FORMAT;
+            if(rank == Rank.SECOND) {
+                message = BONUS_FORMAT;
             }
+
+            return String.format(message, rank.hitCount, reward);
         }
-        return NO_LUCK;
-    }
-
-    public int getRankNumber() {
-        return rankNumber;
-    }
-
-    public int getReward() {
-        return reward;
-    }
-
-    public int getJackpotCriteriaCnt() {
-        return jackpotCriteria.get(this);
     }
 }
